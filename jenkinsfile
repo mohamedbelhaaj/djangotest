@@ -1,61 +1,42 @@
 pipeline {
-    agent {
-        docker {
-            image 'python:3.11'  // Image officielle Python
-            args '-u root:root'   // facultatif : exécuter en root pour installer des packages si besoin
-        }
-    }
+    agent any
 
     environment {
         VIRTUAL_ENV = "${WORKSPACE}/venv"
         PATH = "${VIRTUAL_ENV}/bin:${env.PATH}"
         SONAR_TOKEN = credentials('SONAR_TOKEN')
-        SONAR_HOST_URL = 'http://host.docker.internal:9000'  // Sur Docker Desktop, host.docker.internal pointe vers Windows
+        SONAR_HOST_URL = 'http://host.docker.internal:9000'
     }
 
     stages {
-        stage('Checkout') {
+        stage('Build and Test inside Docker') {
             steps {
-                git branch: 'main', url: 'https://github.com/mohamedbelhaaj/djangotest.git'
-            }
-        }
-
-        stage('Setup Python') {
-            steps {
-                sh '''
-                    python -m venv venv
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
-                '''
-            }
-        }
-
-        stage('Lint') {
-            steps {
-                sh '''
-                    pip install flake8
-                    flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-                    flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-                '''
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                sh 'python manage.py test'
+                sh """
+                    docker run --rm -v $PWD:/workspace -w /workspace python:3.11 \
+                    bash -c '
+                        python -m venv venv &&
+                        pip install --upgrade pip &&
+                        pip install -r requirements.txt &&
+                        pip install flake8 &&
+                        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics &&
+                        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics &&
+                        python manage.py test
+                    '
+                """
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh '''
+                    sh """
+                        docker run --rm -v $PWD:/workspace -w /workspace sonarsource/sonar-scanner-cli \
                         sonar-scanner \
                         -Dsonar.projectKey=django_project \
                         -Dsonar.sources=. \
                         -Dsonar.host.url=$SONAR_HOST_URL \
                         -Dsonar.login=$SONAR_TOKEN
-                    '''
+                    """
                 }
             }
         }
