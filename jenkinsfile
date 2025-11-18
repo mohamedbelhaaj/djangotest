@@ -6,8 +6,12 @@ pipeline {
     }
   }
 
+  environment {
+    DJANGO_SETTINGS_MODULE = 'vt_analyzer' // Remplacer par le bon chemin
+  }
+
   stages {
-    stage('SCM') {
+    stage('Checkout') {
       steps {
         checkout scm
       }
@@ -25,7 +29,7 @@ pipeline {
     stage('Run Tests + Coverage') {
       steps {
         dir('backend') {
-          sh 'coverage run manage.py test'  // Correction: 'test' au lieu de 'teest'
+          sh 'coverage run manage.py test'
           sh 'coverage xml'
           sh 'coverage report'
         }
@@ -37,10 +41,18 @@ pipeline {
         dir('backend') {
           script {
             def scannerHome = tool 'SonarScanner'
-            withSonarQubeEnv('SonarQube') {  // Ajoutez le nom de votre serveur SonarQube
+            withSonarQubeEnv('SonarQube') {
               sh "${scannerHome}/bin/sonar-scanner"
             }
           }
+        }
+      }
+    }
+
+    stage('Quality Gate') {
+      steps {
+        timeout(time: 5, unit: 'MINUTES') {
+          waitForQualityGate abortPipeline: true
         }
       }
     }
