@@ -11,9 +11,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                node {
-                    git branch: 'main', url: 'https://github.com/mohamedbelhaaj/djangotest.git'
-                }
+                git branch: 'main', url: 'https://github.com/mohamedbelhaaj/djangotest.git'
             }
         }
 
@@ -45,16 +43,14 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                node {
-                    withSonarQubeEnv('SonarQube') { // Nom exact défini dans Jenkins
-                        sh '''
-                            sonar-scanner \
-                            -Dsonar.projectKey=django_project \
-                            -Dsonar.sources=. \
-                            -Dsonar.host.url=$SONAR_HOST_URL \
-                            -Dsonar.login=$SONAR_TOKEN
-                        '''
-                    }
+                withSonarQubeEnv('SonarQube') { // Nom exact défini dans Jenkins
+                    sh '''
+                        sonar-scanner \
+                        -Dsonar.projectKey=django_project \
+                        -Dsonar.sources=. \
+                        -Dsonar.host.url=$SONAR_HOST_URL \
+                        -Dsonar.login=$SONAR_TOKEN
+                    '''
                 }
             }
         }
@@ -67,14 +63,12 @@ pipeline {
 
         stage('Push Docker Image') {
             steps {
-                node {
-                    withCredentials([usernamePassword(credentialsId: 'DOCKER_CRED', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        sh '''
-                            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                            docker tag django-app:latest $DOCKER_USER/django-app:latest
-                            docker push $DOCKER_USER/django-app:latest
-                        '''
-                    }
+                withCredentials([usernamePassword(credentialsId: 'DOCKER_CRED', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                        docker tag django-app:latest $DOCKER_USER/django-app:latest
+                        docker push $DOCKER_USER/django-app:latest
+                    '''
                 }
             }
         }
@@ -82,9 +76,7 @@ pipeline {
 
     post {
         always {
-            node {
-                cleanWs()
-            }
+            cleanWs()
         }
     }
 }
