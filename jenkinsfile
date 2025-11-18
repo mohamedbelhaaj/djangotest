@@ -1,72 +1,86 @@
 pipeline {
-  agent {
-    docker {
-      image 'python:3.11'
-      args '-u root:root'
-    }
-  }
+    agent any
 
-  environment {
-    DJANGO_SETTINGS_MODULE = 'vt_analyzer' // Remplacer par le bon chemin
-  }
-
-  stages {
-    stage('Checkout') {
-      steps {
-        checkout scm
-      }
+    environment {
+        VIRTUAL_ENV = "${WORKSPACE}/venv"
+        PATH = "${VIRTUAL_ENV}/bin:${env.PATH}"
+        SONAR_TOKEN = credentials('SONAR_TOKEN') // Token SonarQube stocké dans Jenkins Credentials
     }
 
-    stage('Install Dependencies') {
-      steps {
-        dir('backend') {
-          sh 'pip install --upgrade pip'
-          sh 'pip install -r requirements.txt'
-        }
-      }
-    }
-
-    stage('Run Tests + Coverage') {
-      steps {
-        dir('backend') {
-          sh 'coverage run manage.py test'
-          sh 'coverage xml'
-          sh 'coverage report'
-        }
-      }
-    }
-
-    stage('SonarQube Analysis') {
-      steps {
-        dir('backend') {
-          script {
-            def scannerHome = tool 'SonarScanner'
-            withSonarQubeEnv('SonarQube') {
-              sh "${scannerHome}/bin/sonar-scanner"
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/mohamedbelhaaj/djangotest.git'
             }
-          }
         }
-      }
+
+        stage('Setup Python') {
+            steps {
+                sh '''
+                    python3 -m venv $VIRTUAL_ENV
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                '''
+            }
+        }
+
+        stage('Lint') {
+            steps {
+                sh '''
+                    pip install flake8
+                    flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+                    flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+                '''
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh 'python manage.py test'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            environment {
+                SONAR_HOST_URL = 'http://localhost:9000' // l'URL de ton serveur SonarQube
+            }
+            steps {
+                withSonarQubeEnv('SonarQube') { // Nom du serveur SonarQube défini dans Jenkins
+                    sh '''
+                        sonar-scanner \
+                        -Dsonar.projectKey=django_project \
+                        -Dsonar.sources=. \
+                        -Dsonar.host.url=$SONAR_HOST_URL \
+                        -Dsonar.login=$SONAR_TOKEN
+                    '''
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                    docker build -t django-app:latest .
+                '''
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'DOCKER_CRED', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                        docker tag django-app:latest $DOCKER_USER/django-app:latest
+                        docker push $DOCKER_USER/django-app:latest
+                    '''
+                }
+            }
+        }
     }
 
-    stage('Quality Gate') {
-      steps {
-        timeout(time: 5, unit: 'MINUTES') {
-          waitForQualityGate abortPipeline: true
+    post {
+        always {
+            cleanWs()
         }
-      }
     }
-  }
-
-  post {
-    always {
-      cleanWs()
-    }
-    success {
-      echo 'Pipeline succeeded!'
-    }
-    failure {
-      echo 'Pipeline failed!'
-    }
-  }
 }
