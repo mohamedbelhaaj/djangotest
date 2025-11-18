@@ -5,12 +5,15 @@ pipeline {
         VIRTUAL_ENV = "${WORKSPACE}/venv"
         PATH = "${VIRTUAL_ENV}/bin:${env.PATH}"
         SONAR_TOKEN = credentials('SONAR_TOKEN') // Token SonarQube stocké dans Jenkins Credentials
+        SONAR_HOST_URL = 'http://localhost:9000' // URL de ton serveur SonarQube
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/mohamedbelhaaj/djangotest.git'
+                node {
+                    git branch: 'main', url: 'https://github.com/mohamedbelhaaj/djangotest.git'
+                }
             }
         }
 
@@ -41,38 +44,37 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            environment {
-                SONAR_HOST_URL = 'http://localhost:9000' // l'URL de ton serveur SonarQube
-            }
             steps {
-                withSonarQubeEnv('SonarQube') { // Nom du serveur SonarQube défini dans Jenkins
-                    sh '''
-                        sonar-scanner \
-                        -Dsonar.projectKey=django_project \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=$SONAR_HOST_URL \
-                        -Dsonar.login=$SONAR_TOKEN
-                    '''
+                node {
+                    withSonarQubeEnv('SonarQube') { // Nom exact défini dans Jenkins
+                        sh '''
+                            sonar-scanner \
+                            -Dsonar.projectKey=django_project \
+                            -Dsonar.sources=. \
+                            -Dsonar.host.url=$SONAR_HOST_URL \
+                            -Dsonar.login=$SONAR_TOKEN
+                        '''
+                    }
                 }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh '''
-                    docker build -t django-app:latest .
-                '''
+                sh 'docker build -t django-app:latest .'
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'DOCKER_CRED', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh '''
-                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker tag django-app:latest $DOCKER_USER/django-app:latest
-                        docker push $DOCKER_USER/django-app:latest
-                    '''
+                node {
+                    withCredentials([usernamePassword(credentialsId: 'DOCKER_CRED', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh '''
+                            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                            docker tag django-app:latest $DOCKER_USER/django-app:latest
+                            docker push $DOCKER_USER/django-app:latest
+                        '''
+                    }
                 }
             }
         }
@@ -80,7 +82,9 @@ pipeline {
 
     post {
         always {
-            cleanWs()
+            node {
+                cleanWs()
+            }
         }
     }
 }
