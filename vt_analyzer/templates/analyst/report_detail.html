@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapport - {{ report.input_value }}</title>
+    <!-- Collez votre CSS habituel ici -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+        :root {
+            --primary-red: #dc2626;
+            --primary-red-dark: #991b1b;
+            --header-red: #c41e3a;
+            --dark-bg-1: #111827;
+            --dark-bg-2: #1f2937;
+            --dark-bg-3: #374151;
+            --border-color: #4b5563;
+            --text-light: #f9fafb;
+            --text-secondary: #9ca3af;
+            --danger: #b91c1c;
+            --warning: #f59e0b;
+            --success: #16a34a;
+            --info: #0ea5e9;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --border-radius: 0.75rem;
+            --border-radius-sm: 8px;
+            --gradient-primary: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-red-dark) 100%);
+            --gradient-surface: linear-gradient(135deg, var(--dark-bg-2) 0%, var(--dark-bg-1) 100%);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--dark-bg-1); color: var(--text-light); line-height: 1.6; }
+        .main-container { max-width: 1400px; margin: 2rem auto; padding: 0 2rem; }
+        .card { background: var(--gradient-surface); border: 1px solid var(--border-color); border-radius: var(--border-radius); box-shadow: var(--shadow); margin-bottom: 30px; overflow: hidden; position: relative; }
+        .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--gradient-primary); }
+        .card-content { padding: 40px; }
+        h3 { font-family: 'Orbitron', monospace; font-size: 1.5rem; margin-bottom: 20px; color: var(--primary-red); }
+        h4 { font-family: 'Orbitron', monospace; font-size: 1.2rem; margin-bottom: 15px; color: var(--text-light); }
+        .btn {
+            background: var(--gradient-primary); color: var(--white); border: none; padding: 15px 30px; font-size: 1rem;
+            font-weight: 700; font-family: 'Orbitron', monospace; text-transform: uppercase; letter-spacing: 1px;
+            border-radius: var(--border-radius-sm); cursor: pointer; transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(220, 38, 38, 0.3); position: relative; overflow: hidden; text-decoration: none; display: inline-block; text-align: center;
+        }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(220, 38, 38, 0.4); }
+        .btn-secondary {
+            background: var(--dark-bg-3);
+            border: 1px solid var(--border-color);
+            box-shadow: none;
+        }
+        .btn-secondary:hover { background: var(--border-color); border-color: var(--text-secondary); box-shadow: var(--shadow-dark); }
+        .btn-success { background: linear-gradient(135deg, var(--success) 0%, #14532d 100%); }
+        .btn-warning { background: linear-gradient(135deg, var(--warning) 0%, #78350f 100%); }
+        
+        .result-section { margin-bottom: 40px; }
+        .info-box { background: var(--dark-bg-2); border: 1px solid var(--border-color); padding: 20px; border-radius: var(--border-radius-sm); margin-top: 20px; }
+        .info-box p { color: var(--text-secondary); margin-bottom: 8px; font-size: 1.1rem; line-height: 1.7; }
+        .info-box strong { color: var(--white); font-weight: 600; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 25px; margin: 40px 0; }
+        .stat-card { padding: 30px; border-radius: var(--border-radius); background: var(--dark-bg-2); border: 1px solid var(--border-color); position: relative; overflow: hidden; text-align: center; }
+        .stat-card .stat-icon { font-size: 3rem; margin-bottom: 20px; }
+        .stat-card .stat-number { font-family: 'Orbitron', monospace; font-size: 3rem; font-weight: 700; line-height: 1; margin-bottom: 10px; }
+        .stat-card .stat-label { font-size: 1rem; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; }
+        .stat-card.malicious { border-color: var(--danger); } .stat-card.malicious .stat-number { color: var(--danger); }
+        .stat-card.suspicious { border-color: var(--warning); } .stat-card.suspicious .stat-number { color: var(--warning); }
+        .stat-card.clean { border-color: var(--success); } .stat-card.clean .stat-number { color: var(--success); }
+        .stat-card.neutral { border-color: var(--info); } .stat-card.neutral .stat-number { color: var(--info); }
+        
+        .detection-table { width: 100%; border-collapse: collapse; margin-top: 20px; background: var(--dark-bg-2); border-radius: var(--border-radius-sm); overflow: hidden; }
+        .detection-table th, .detection-table td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .detection-table th { background: var(--gradient-primary); color: var(--white); font-family: 'Orbitron', monospace; font-weight: 700; text-transform: uppercase; }
+        .detection-table td { color: var(--text-secondary); }
+        .detection-table tr:hover { background: var(--dark-bg-3); }
+        
+        .alert { padding: 20px; border-radius: var(--border-radius); margin-bottom: 25px; border-left: 4px solid; font-weight: 500; }
+        .alert-danger { background: rgba(185, 28, 28, 0.1); border-left-color: var(--danger); color: #fecaca; }
+        .alert-success { background: rgba(22, 163, 74, 0.1); border-left-color: var(--success); color: #bbf7d0; }
+        
+        .button-group { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; }
+        
+        .form-group { margin-bottom: 1.5rem; }
+        .form-label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-secondary); }
+        .form-control {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1rem;
+            background-color: var(--dark-bg-1);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            color: var(--text-light);
+            font-family: 'Inter', sans-serif;
+        }
+        .form-control:focus {
+            border-color: var(--primary-red);
+            box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.5);
+            outline: none;
+        }
+        textarea.form-control { min-height: 120px; }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+    
+        <!-- Affichage des messages (Succès, Erreur) -->
+        {% if messages %}
+            <div class="card">
+                <div class="card-content">
+                    {% for message in messages %}
+                        <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="card">
+            <div class="card-content">
+                <h3>🔍 RAPPORT D'ANALYSE</h3>
+                
+                <!-- Informations sur l'entrée -->
+                <div class="result-section">
+                    <h3>📋 Informations sur l'entrée</h3>
+                    <div class="info-box">
+                        <p><strong>Type :</strong> {{ report.get_input_type_display }}</p>
+                        <p><strong>Valeur analysée :</strong> {{ report.input_value }}</p>
+                        <p><strong>Sévérité :</strong> {{ report.get_severity_display }}</p>
+                        <p><strong>Score :</strong> {{ report.threat_score|floatformat:1 }}/100</p>
+                        <p><strong>Moteur utilisé :</strong> {{ report.engine_used|upper }}</p>
+                        <p><strong>Analyste :</strong> {{ report.analyst.username }}</D>
+                        <p><strong>Statut :</strong> {{ report.get_status_display }}</p>
+                        <hr style="border-color: var(--border-color); margin: 1rem 0;">
+                        <p><strong>Notes :</strong> {{ report.notes|linebreaksbr|default:"Aucune note." }}</p>
+                    </div>
+                </div>
+
+                <!-- 
+                  COLLEZ VOS SECTIONS DE RÉSULTATS VT, OTX, IPINFO ICI 
+                  (Je les ai omises pour la lisibilité, mais vous devriez les
+                   garder de votre version précédente)
+                -->
+
+            </div>
+        </div>
+        
+        <!-- Tâches associées -->
+        <div class="card">
+            <div class="card-content">
+                <h3>Tâches associées</h3>
+                {% if tasks %}
+                <table class="detection-table">
+                    <thead>
+                        <tr>
+                            <th>Titre</th>
+                            <th>Priorité</th>
+                            <th>Statut</th>
+                            <th>Assigné à</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in tasks %}
+                        <tr>
+                            <td>{{ task.title }}</td>
+                            <td>{{ task.get_priority_display }}</td>
+                            <td>{{ task.get_status_display }}</td>
+                            <td>{{ task.assigned_to.username }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p style="color: var(--text-secondary);">Aucune tâche associée à ce rapport.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 
+          BOUTONS D'ACTIONS (LOGIQUE CORRIGÉE)
+        -->
+        <div class="card">
+            <div class="card-content">
+                <h3>Actions</h3>
+                
+                <div class="button-group">
+                
+                    {% if request.user.role == 'admin' %}
+                        <!-- ==== BOUTONS ADMIN ==== -->
+                        
+                        <!-- Formulaire pour Approuver / Faux Positif (utilise la vue review_report) -->
+                        <form action="{% url 'review_report' report.id %}" method="post" style="display: inline-block;">
+                            {% csrf_token %}
+                            <button type="submit" name="action" value="approve" class="btn btn-success">Approuver</button>
+                            <button type="submit" name="action" value="false_positive" class="btn btn-warning">Faux Positif</button>
+                        </form>
+                        
+                        <!-- Bouton pour la mitigation (Bloquer IP) -->
+                        <a href="{% url 'create_mitigation' report.id %}" class="btn">
+                            Créer une Mitigation (AWS)
+                        </a>
+                        
+                        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Retour au Dashboard</a>
+
+                    {% else %}
+                        <!-- ==== BOUTONS ANALYSTE ==== -->
+                        
+                        <a href="{% url 'download_pdf' report.id %}" class="btn">Télécharger le PDF</a>
+                        <a href="{% url 'send_to_admin' report.id %}" class="btn btn-secondary">Envoyer à l'administrateur</a>
+                        <a href="{% url 'create_task' report.id %}" class="btn btn-secondary">Créer une tâche</a>
+                        <a href="{% url 'analyze' %}" class="btn btn-secondary" style="background: var(--dark-bg-3);">Retour à l'analyse</a>
+                    
+                    {% endif %}
+                </div>
+                
+                <!-- 
+                  NOUVEAU FORMULAIRE DE STATUT (Pour Admins)
+                  Utilise la variable 'status_form' de la vue report_detail
+                -->
+                {% if request.user.role == 'admin' and status_form %}
+                    <hr style="border-color: var(--border-color); margin: 2rem 0;">
+                    <h4>Mettre à jour le statut et les notes</h4>
+                    <form method="post">
+                        {% csrf_token %}
+                        <!-- Champ caché pour identifier ce formulaire -->
+                        <input type="hidden" name="update_status" value="true">
+                        
+                        <div class="form-group">
+                            <label for="{{ status_form.status.id_for_label }}" class="form-label">Nouveau statut</label>
+                            {{ status_form.status }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ status_form.notes.id_for_label }}" class="form-label">Notes (Admin)</label>
+                            {{ status_form.notes }}
+                        </div>
+                        <button type="submit" class="btn btn-secondary">Mettre à jour</button>
+                    </form>
+                {% endif %}
+
+            </div>
+        </div>
+
+    </div>
+    
+    <script>
+    // Script pour appliquer les classes aux champs de formulaire générés par Django
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('input, select, textarea').forEach(function(el) {
+            if (el.type !== 'hidden' && el.type !== 'submit' && el.type !== 'checkbox') {
+                el.classList.add('form-control');
+            }
+        });
+    });
+    </script>
+</body>
+</html>

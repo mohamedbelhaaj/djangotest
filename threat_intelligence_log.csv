@@ -1,0 +1,2 @@
+timestamp,indicator,indicator_type,threat_score,severity,malicious_count,suspicious_count,country,asn,pulse_count,vt_positives,analyst,notes
+2025-11-07 15:08:52,8.8.8.8,ip,0.0,info,0,0,United States,GOOGLE,0,0,nefaa,

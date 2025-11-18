@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tâches - SOC Platform</title>
+    <!-- Collez votre CSS habituel ici -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+        :root {
+            --primary-red: #dc2626;
+            --primary-red-dark: #991b1b;
+            --header-red: #c41e3a;
+            --dark-bg-1: #111827;
+            --dark-bg-2: #1f2937;
+            --dark-bg-3: #374151;
+            --border-color: #4b5563;
+            --text-light: #f9fafb;
+            --text-secondary: #9ca3af;
+            --color-critical: #ef4444;
+            --color-pending: #f59e0b;
+            --color-open: #3b82f6;
+            --color-blocked: #22c55e;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --border-radius: 0.75rem;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--dark-bg-1); color: var(--text-light); line-height: 1.6; }
+        .header-nav { background-color: var(--header-red); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--primary-red-dark); }
+        .logo { font-family: 'Orbitron', monospace; font-size: 1.75rem; font-weight: 900; color: var(--text-light); text-decoration: none; }
+        .nav-links { display: flex; gap: 1.5rem; }
+        .nav-links a { color: var(--text-light); text-decoration: none; font-weight: 600; font-size: 1rem; opacity: 0.9; transition: opacity 0.3s ease; }
+        .nav-links a.active, .nav-links a:hover { opacity: 1; text-decoration: underline; }
+        .user-menu { color: var(--text-light); font-weight: 600; }
+        .user-menu a { color: var(--text-light); text-decoration: none; }
+        .container { max-width: 1600px; margin: 2rem auto; padding: 0 2rem; }
+        .card { background-color: var(--dark-bg-2); border-radius: var(--border-radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 2rem; }
+        .card-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); }
+        .card-header h3 { font-family: 'Orbitron', monospace; font-size: 1.25rem; font-weight: 700; }
+        .card-content { padding: 0; }
+        .table { width: 100%; border-collapse: collapse; }
+        .table th, .table td { padding: 1rem 1.5rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .table thead th { background-color: var(--header-red); color: var(--text-light); font-size: 0.875rem; font-weight: 700; text-transform: uppercase; }
+        .table tbody tr:last-child td { border-bottom: none; }
+        .table tbody tr:hover { background-color: var(--dark-bg-3); }
+        .table td { color: var(--text-secondary); }
+        .table .action-link { color: var(--primary-red); font-weight: 600; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <nav class="header-nav">
+        <a href="{% url 'dashboard' %}" class="logo">SOC PLATFORM</a>
+        <div class="nav-links">
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <a href="{% url 'admin_reports' %}">Reports</a>
+            <a href="#">Mitigations</a>
+            <a href="{% url 'admin_tasks_list' %}" class="active">Tasks</a>
+            <a href="{% url 'aws_config' %}">AWS Config</a>
+        </div>
+        <div class="user-menu">
+            {{ request.user.username }} (Admin) | <a href="{% url 'logout' %}">Déconnexion</a>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h3>Vos tâches assignées ({{ tasks.paginator.count }})</h3>
+            </div>
+            <div class="card-content">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Titre</th>
+                            <th>Priorité</th>
+                            <th>Statut</th>
+                            <th>Rapport Lié</th>
+                            <th>Créé par</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in tasks %}
+                        <tr>
+                            <td>{{ task.title }}</td>
+                            <td>{{ task.get_priority_display }}</td>
+                            <td>{{ task.get_status_display }}</td>
+                            <td>{{ task.report.input_value|truncatechars:30 }}</td>
+                            <td>{{ task.created_by.username }}</td>
+                            <td>
+                                <a href="{% url 'report_detail' task.report.id %}" class="action-link">Voir le Rapport</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                                Aucune tâche ne vous est assignée.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

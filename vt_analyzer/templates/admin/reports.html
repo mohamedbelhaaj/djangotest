@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tous les Rapports - SOC Platform</title>
+    <!-- 
+      Collez ici l'intégralité de votre bloc <style> 
+      (copié depuis admin/dashboard.html) 
+    -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+        :root {
+            --primary-red: #dc2626;
+            --primary-red-dark: #991b1b;
+            --header-red: #c41e3a;
+            --dark-bg-1: #111827;
+            --dark-bg-2: #1f2937;
+            --dark-bg-3: #374151;
+            --border-color: #4b5563;
+            --text-light: #f9fafb;
+            --text-secondary: #9ca3af;
+            --color-critical: #ef4444;
+            --color-pending: #f59e0b;
+            --color-open: #3b82f6;
+            --color-blocked: #22c55e;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --border-radius: 0.75rem;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--dark-bg-1); color: var(--text-light); line-height: 1.6; }
+        .header-nav { background-color: var(--header-red); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--primary-red-dark); }
+        .logo { font-family: 'Orbitron', monospace; font-size: 1.75rem; font-weight: 900; color: var(--text-light); text-decoration: none; }
+        .nav-links { display: flex; gap: 1.5rem; }
+        .nav-links a { color: var(--text-light); text-decoration: none; font-weight: 600; font-size: 1rem; opacity: 0.9; transition: opacity 0.3s ease; }
+        .nav-links a.active, .nav-links a:hover { opacity: 1; text-decoration: underline; }
+        .user-menu { color: var(--text-light); font-weight: 600; }
+        .user-menu a { color: var(--text-light); text-decoration: none; }
+        .container { max-width: 1600px; margin: 2rem auto; padding: 0 2rem; }
+        .card { background-color: var(--dark-bg-2); border-radius: var(--border-radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 2rem; }
+        .card-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); }
+        .card-header h3 { font-family: 'Orbitron', monospace; font-size: 1.25rem; font-weight: 700; }
+        .card-content { padding: 0; }
+        .table { width: 100%; border-collapse: collapse; }
+        .table th, .table td { padding: 1rem 1.5rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .table thead th { background-color: var(--header-red); color: var(--text-light); font-size: 0.875rem; font-weight: 700; text-transform: uppercase; }
+        .table tbody tr:last-child td { border-bottom: none; }
+        .table tbody tr:hover { background-color: var(--dark-bg-3); }
+        .table td { color: var(--text-secondary); }
+        .table td.indicator { color: var(--text-light); font-weight: 500; }
+        .table .action-link { color: var(--primary-red); font-weight: 600; text-decoration: none; }
+        .table .action-link:hover { text-decoration: underline; }
+        .badge { padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600; font-size: 0.875rem; text-transform: uppercase; }
+        .badge-critical { background-color: var(--color-critical); color: var(--text-light); }
+        .badge-high { background-color: var(--color-pending); color: var(--text-light); }
+        .badge-medium { background-color: var(--color-open); color: var(--text-light); }
+        .badge-low { background-color: var(--color-blocked); color: var(--text-light); }
+        .badge-info { background-color: var(--border-color); color: var(--text-light); }
+        /* ... (Ajoutez d'autres styles si nécessaire) ... */
+    </style>
+</head>
+<body>
+
+    <nav class="header-nav">
+        <a href="{% url 'dashboard' %}" class="logo">SOC PLATFORM</a>
+        <div class="nav-links">
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <a href="{% url 'admin_reports' %}" class="active">Reports</a>
+            <a href="#">Mitigations</a>
+         
+             <!-- LIENS CORRIGÉS -->
+            <a href="{% url 'admin_tasks_list' %}">Tasks</a>
+            <a href="{% url 'aws_config' %}">AWS Config</a>
+        </div>
+        <div class="user-menu">
+            {{ request.user.username }} (Admin) | 
+            <a href="{% url 'logout' %}">Déconnexion</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        
+        <div class="card">
+            <div class="card-header">
+                <h3>Tous les rapports ({{ reports.paginator.count }})</h3>
+                <!-- Vous pouvez ajouter des filtres ici plus tard -->
+            </div>
+            <div class="card-content">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Indicateur</th>
+                            <th>Sévérité</th>
+                            <th>Statut</th>
+                            <th>Analyste</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Les données 'reports' viennent de votre vue admin_reports -->
+                        {% for report in reports %}
+                        <tr>
+                            <td>{{ report.get_input_type_display }}</td>
+                            <td class="indicator">{{ report.input_value|truncatechars:40 }}</td>
+                            <td>
+                                {% if report.severity == 'critical' %}
+                                    <span class="badge badge-critical">Critical</span>
+                                {% elif report.severity == 'high' %}
+                                    <span class="badge badge-high">High</span>
+                                {% elif report.severity == 'medium' %}
+                                    <span class="badge badge-medium">Medium</span>
+                                {% elif report.severity == 'low' %}
+                                    <span class="badge badge-low">Low</span>
+                                {% else %}
+                                    <span class="badge badge-info">{{ report.get_severity_display|default:'Info' }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ report.get_status_display }}</td>
+                            <td>{{ report.analyst.username }}</td>
+                            <td>{{ report.created_at|date:"d M Y" }}</td>
+                            <td>
+                                <a href="{% url 'report_detail' report.id %}" class="action-link">Voir Détails</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                                Aucun rapport ne vous est assigné.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Vous pouvez ajouter la pagination ici -->
+        </div>
+
+    </div> <!-- fin .container -->
+
+</body>
+</html>

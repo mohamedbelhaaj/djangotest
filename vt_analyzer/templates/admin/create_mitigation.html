@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Créer une Mitigation - SOC Platform</title>
+    <!-- Collez votre CSS habituel ici -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+        :root {
+            --primary-red: #dc2626;
+            --primary-red-dark: #991b1b;
+            --header-red: #c41e3a;
+            --dark-bg-1: #111827;
+            --dark-bg-2: #1f2937;
+            --dark-bg-3: #374151;
+            --border-color: #4b5563;
+            --text-light: #f9fafb;
+            --text-secondary: #9ca3af;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --border-radius: 0.75rem;
+            --border-radius-sm: 8px;
+            --gradient-primary: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-red-dark) 100%);
+            --gradient-surface: linear-gradient(135deg, var(--dark-bg-2) 0%, var(--dark-bg-1) 100%);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--dark-bg-1); color: var(--text-light); line-height: 1.6; }
+        .main-container { max-width: 900px; margin: 2rem auto; padding: 0 2rem; }
+        .card { background: var(--gradient-surface); border: 1px solid var(--border-color); border-radius: var(--border-radius); box-shadow: var(--shadow); margin-bottom: 30px; overflow: hidden; position: relative; }
+        .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--gradient-primary); }
+        .card-content { padding: 40px; }
+        h3 { font-family: 'Orbitron', monospace; font-size: 1.5rem; margin-bottom: 20px; color: var(--primary-red); }
+        .btn {
+            background: var(--gradient-primary); color: var(--white); border: none; padding: 15px 30px; font-size: 1rem;
+            font-weight: 700; font-family: 'Orbitron', monospace; text-transform: uppercase; letter-spacing: 1px;
+            border-radius: var(--border-radius-sm); cursor: pointer; transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(220, 38, 38, 0.3); position: relative; overflow: hidden; text-decoration: none; display: inline-block; text-align: center;
+        }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(220, 38, 38, 0.4); }
+        
+        .form-group { margin-bottom: 1.5rem; }
+        .form-label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-secondary); }
+        .form-control {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1rem;
+            background-color: var(--dark-bg-1);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            color: var(--text-light);
+            font-family: 'Inter', sans-serif;
+        }
+        .form-control:focus {
+            border-color: var(--primary-red);
+            box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.5);
+            outline: none;
+        }
+        .form-check-label {
+            display: inline-block;
+            vertical-align: middle;
+            color: var(--text-light);
+        }
+        .form-check-input {
+            width: 1.2em;
+            height: 1.2em;
+            margin-right: 0.5em;
+            vertical-align: middle;
+            cursor: pointer;
+            accent-color: var(--primary-red);
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="card">
+            <div class="card-content">
+                <h3>Créer une Action de Mitigation</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+                    Vous êtes sur le point de créer une action pour le rapport : <strong>{{ report.input_value }}</strong>
+                </p>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Le 'form' vient de votre vue create_mitigation -->
+                    
+                    <div class="form-group">
+                        <label for="{{ form.action_type.id_for_label }}" class="form-label">Type d'action</label>
+                        {{ form.action_type }}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.target_value.id_for_label }}" class="form-label">Cible (IP, Domaine, etc.)</label>
+                        {{ form.target_value }}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.aws_region.id_for_label }}" class="form-label">Région AWS</label>
+                        {{ form.aws_region }}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">Description / Note</label>
+                        {{ form.description }}
+                    </div>
+                    
+                    <hr style="border-color: var(--border-color); margin: 2rem 0;">
+                    
+                    <div class="form-group" style="display: flex; align-items: center;">
+                        {{ form.execute_now }}
+                        <label for="{{ form.execute_now.id_for_label }}" class="form-check-label">
+                            Exécuter l'action immédiatement sur AWS
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn">Créer et Exécuter</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Script simple pour ajouter la classe CSS aux champs du formulaire
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('input[type="text"], input[type="password"], select, textarea').forEach(function(el) {
+                el.classList.add('form-control');
+            });
+        });
+    </script>
+</body>
+</html>

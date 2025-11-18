@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration AWS - SOC Platform</title>
+    <!-- Collez votre CSS habituel ici -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+        :root {
+            --primary-red: #dc2626;
+            --primary-red-dark: #991b1b;
+            --header-red: #c41e3a;
+            --dark-bg-1: #111827;
+            --dark-bg-2: #1f2937;
+            --dark-bg-3: #374151;
+            --border-color: #4b5563;
+            --text-light: #f9fafb;
+            --text-secondary: #9ca3af;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --border-radius: 0.75rem;
+            --border-radius-sm: 8px;
+            --gradient-primary: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-red-dark) 100%);
+            --gradient-surface: linear-gradient(135deg, var(--dark-bg-2) 0%, var(--dark-bg-1) 100%);
+            --success: #16a34a;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--dark-bg-1); color: var(--text-light); line-height: 1.6; }
+        .header-nav { background-color: var(--header-red); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--primary-red-dark); }
+        .logo { font-family: 'Orbitron', monospace; font-size: 1.75rem; font-weight: 900; color: var(--text-light); text-decoration: none; }
+        .nav-links { display: flex; gap: 1.5rem; }
+        .nav-links a { color: var(--text-light); text-decoration: none; font-weight: 600; font-size: 1rem; opacity: 0.9; transition: opacity 0.3s ease; }
+        .nav-links a.active, .nav-links a:hover { opacity: 1; text-decoration: underline; }
+        .user-menu { color: var(--text-light); font-weight: 600; }
+        .user-menu a { color: var(--text-light); text-decoration: none; }
+        .container { max-width: 1600px; margin: 2rem auto; padding: 0 2rem; }
+        .card { background: var(--gradient-surface); border: 1px solid var(--border-color); border-radius: var(--border-radius); box-shadow: var(--shadow); margin-bottom: 30px; overflow: hidden; position: relative; }
+        .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--gradient-primary); }
+        .card-content { padding: 40px; }
+        h3 { font-family: 'Orbitron', monospace; font-size: 1.5rem; margin-bottom: 20px; color: var(--primary-red); }
+        .btn {
+            background: var(--gradient-primary); color: var(--white); border: none; padding: 15px 30px; font-size: 1rem;
+            font-weight: 700; font-family: 'Orbitron', monospace; text-transform: uppercase; letter-spacing: 1px;
+            border-radius: var(--border-radius-sm); cursor: pointer; transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(220, 38, 38, 0.3); position: relative; overflow: hidden; text-decoration: none; display: inline-block; text-align: center;
+        }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(220, 38, 38, 0.4); }
+        
+        .form-group { margin-bottom: 1.5rem; }
+        .form-label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-secondary); }
+        .form-control {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1rem;
+            background-color: var(--dark-bg-1);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            color: var(--text-light);
+            font-family: 'Inter', sans-serif;
+        }
+        .form-control:focus {
+            border-color: var(--primary-red);
+            box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.5);
+            outline: none;
+        }
+        .alert-success { background: rgba(22, 163, 74, 0.1); border-left: 4px solid var(--success); color: #bbf7d0; padding: 20px; border-radius: var(--border-radius); margin-bottom: 25px; }
+    </style>
+</head>
+<body>
+    <nav class="header-nav">
+        <a href="{% url 'dashboard' %}" class="logo">SOC PLATFORM</a>
+        <div class="nav-links">
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <a href="{% url 'admin_reports' %}">Reports</a>
+            <a href="#">Mitigations</a>
+            <a href="{% url 'admin_tasks_list' %}">Tasks</a>
+            <a href="{% url 'aws_config' %}" class="active">AWS Config</a>
+        </div>
+        <div class="user-menu">
+            {{ request.user.username }} (Admin) | <a href="{% url 'logout' %}">Déconnexion</a>
+        </div>
+    </nav>
+
+    <div class="container" style="max-width: 900px;">
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-success">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="card">
+            <div class="card-content">
+                <h3>Configuration AWS</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+                    Entrez vos identifiants AWS et les ID de ressources pour activer les mitigations automatiques.
+                    Ces clés sont stockées de manière sécurisée.
+                </p>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Le 'form' vient de votre vue aws_config_view -->
+                    
+                    <div class="form-group">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">Nom de la configuration</label>
+                        {{ form.name }}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.aws_access_key.id_for_label }}" class="form-label">Clé d'accès AWS (Access Key ID)</label>
+                        {{ form.aws_access_key }}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.aws_secret_key.id_for_label }}" class="form-label">Clé secrète AWS (Secret Access Key)</label>
+                        {{ form.aws_secret_key }}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.aws_region.id_for_label }}" class="form-label">Région AWS par défaut</label>
+                        {{ form.aws_region }}
+                    </div>
+                    
+                    <hr style="border-color: var(--border-color); margin: 2rem 0;">
+                    
+                    <div class="form-group">
+                        <label for="{{ form.vpc_id.id_for_label }}" class="form-label">ID du VPC par défaut</label>
+                        {{ form.vpc_id }}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.security_group_id.id_for_label }}" class="form-label">ID du Groupe de Sécurité (pour blocage IP)</label>
+                        {{ form.security_group_id }}
+                    </div>
+                    
+                     <div class="form-group">
+                        <label for="{{ form.network_firewall_arn.id_for_label }}" class="form-label">ARN du Pare-feu Réseau (optionnel)</label>
+                        {{ form.network_firewall_arn }}
+                    </div>
+                    
+                    <hr style="border-color: var(--border-color); margin: 2rem 0;">
+                    
+                    <div class="form-group">
+                        <label for="{{ form.auto_block_enabled.id_for_label }}" class="form-label" style="display: inline-block; margin-right: 10px;">Activer le blocage automatique</label>
+                        {{ form.auto_block_enabled }}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.auto_block_threshold.id_for_label }}" class="form-label">Seuil de blocage auto (ex: 10 détections)</label>
+                        {{ form.auto_block_threshold }}
+                    </div>
+                    
+                    <button type="submit" class="btn">Sauvegarder la Configuration</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Script simple pour ajouter la classe CSS aux champs du formulaire
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('input, select, textarea').forEach(function(el) {
+                if (el.type !== 'hidden' && el.type !== 'submit' && el.type !== 'checkbox') {
+                    el.classList.add('form-control');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

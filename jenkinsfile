@@ -1,0 +1,29 @@
+node {
+
+  stage('SCM') {
+    checkout scm
+  }
+
+  stage('Install Dependencies') {
+    dir('backend') {
+      sh 'pip install -r requirements.txt'
+    }
+  }
+
+  stage('Run Tests + Coverage') {
+    dir('backend') {
+      sh 'coverage run manage.py teest'
+      sh 'coverage xml'
+    }
+  }
+
+  stage('SonarQube Analysis') {
+    dir('backend') {
+      def scannerHome = tool 'SonarScanner'
+      withSonarQubeEnv() {
+        sh "${scannerHome}/bin/sonar-scanner"
+      }
+    }
+  }
+
+}

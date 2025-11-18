@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Créer une tâche</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+        :root {
+            --primary-red: #dc2626;
+            --dark-gray: #1a1a1a;
+            --medium-gray: #2d2d2d;
+            --border-gray: #525252;
+            --text-gray: #a3a3a3;
+            --white: #ffffff;
+            --gradient-primary: linear-gradient(135deg, var(--primary-red) 0%, #991b1b 100%);
+            --gradient-dark: linear-gradient(135deg, #000000 0%, var(--dark-gray) 100%);
+            --gradient-surface: linear-gradient(135deg, var(--medium-gray) 0%, var(--dark-gray) 100%);
+            --shadow-dark: 0 10px 30px rgba(0, 0, 0, 0.5);
+            --shadow-red: 0 10px 30px rgba(220, 38, 38, 0.3);
+            --border-radius: 16px;
+            --border-radius-sm: 8px;
+            --transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        /* ... (Collez tout votre CSS ici) ... */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--gradient-dark); color: var(--white); }
+        .main-container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .card { background: var(--gradient-surface); border: 1px solid var(--border-gray); border-radius: var(--border-radius); box-shadow: var(--shadow-dark); margin-bottom: 30px; overflow: hidden; }
+        .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--gradient-primary); }
+        .card-content { padding: 40px; }
+        .form-label { display: block; margin-bottom: 10px; font-weight: 600; color: var(--white); text-transform: uppercase; letter-spacing: 1px; }
+        .btn { /* ... (styles de votre .btn) ... */ 
+            background: var(--gradient-primary); color: var(--white); border: none; padding: 20px 40px; font-size: 1.1rem;
+            font-weight: 700; font-family: 'Orbitron', monospace; text-transform: uppercase; letter-spacing: 2px;
+            border-radius: var(--border-radius-sm); cursor: pointer; transition: var(--transition); width: 100%;
+            box-shadow: var(--shadow-red); position: relative; overflow: hidden; text-decoration: none; display: inline-block; text-align: center;
+        }
+        /* ... (Collez le reste de votre CSS, y compris les styles de formulaire) ... */
+         textarea.form-control, select.form-control, input.form-control, input[type="text"], input[type="datetime-local"] {
+            width: 100%;
+            padding: 18px 20px;
+            font-size: 1.1rem;
+            background: var(--gradient-dark);
+            border: 2px solid var(--border-gray);
+            border-radius: var(--border-radius-sm);
+            color: var(--white);
+            transition: var(--transition);
+            font-family: 'Inter', sans-serif;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+        textarea.form-control:focus, select.form-control:focus, input.form-control:focus, input[type="text"]:focus, input[type="datetime-local"]:focus {
+            border-color: var(--primary-red);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), 0 0 20px rgba(220,38,38,0.4), 0 0 0 1px var(--primary-red);
+            outline: none;
+            background: var(--dark-gray);
+        }
+        select.form-control {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23dc2626' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 16px;
+            padding-right: 50px;
+            cursor: pointer;
+            appearance: none; -webkit-appearance: none; -moz-appearance: none;
+        }
+        /* Style pour le datepicker */
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            filter: invert(1) brightness(0.8) sepia(1) hue-rotate(-50deg) saturate(5);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="card form-container">
+            <div class="card-content">
+                <h3 style="font-family: 'Orbitron', monospace; font-size: 1.5rem; margin-bottom: 30px; color: var(--primary-red);">
+                    Créer une nouvelle tâche
+                </h3>
+                <p style="color: var(--text-gray); margin-bottom: 20px;">
+                    Pour le rapport : {{ report.input_value|truncatechars:50 }}
+                </p>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="form-group" style="margin-bottom: 25px;">
+                        <label class="form-label" for="{{ form.title.id_for_label }}">Titre :</label>
+                        {{ form.title }}
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 25px;">
+                        <label class="form-label" for="{{ form.description.id_for_label }}">Description :</label>
+                        {{ form.description }}
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 25px;">
+                        <label class="form-label" for="{{ form.priority.id_for_label }}">Priorité :</label>
+                        {{ form.priority }}
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 25px;">
+                        <label class="form-label" for="{{ form.assigned_to.id_for_label }}">Assigner à :</label>
+                        {{ form.assigned_to }}
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 25px;">
+                        <label class="form-label" for="{{ form.due_date.id_for_label }}">Date d'échéance :</label>
+                        {{ form.due_date }}
+                    </div>
+                    
+                    <button type="submit" class="btn">Créer la tâche</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Appliquer la classe 'form-control' à tous les champs
+            document.querySelectorAll('input, select, textarea').forEach(function(el) {
+                if (el.type !== 'hidden' && el.type !== 'submit') {
+                    el.classList.add('form-control');
+                }
+            });
+            
+            // ... (Collez votre script JS de personnalisation de select ici) ...
+        });
+    </script>
+</body>
+</html>

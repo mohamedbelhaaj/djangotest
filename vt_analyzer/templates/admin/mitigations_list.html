@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mitigations - SOC Platform</title>
+    <!-- 
+      Ce template utilise le même CSS que votre fichier dashboard.html.
+      Vous pouvez le copier/coller ici ou, mieux encore, le déplacer 
+      dans un fichier "base.html" et étendre ce template.
+    -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+        :root {
+            --primary-red: #dc2626;
+            --primary-red-dark: #991b1b;
+            --header-red: #c41e3a;
+            --dark-bg-1: #111827;
+            --dark-bg-2: #1f2937;
+            --dark-bg-3: #374151;
+            --border-color: #4b5563;
+            --text-light: #f9fafb;
+            --text-secondary: #9ca3af;
+            --color-success: #22c55e;
+            --color-failed: #ef4444;
+            --color-pending: #f59e0b;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --border-radius: 0.75rem;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--dark-bg-1); color: var(--text-light); line-height: 1.6; }
+
+        /* --- En-tête (Header) --- */
+        .header-nav {
+            background-color: var(--header-red);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid var(--primary-red-dark);
+        }
+        .logo { font-family: 'Orbitron', monospace; font-size: 1.75rem; font-weight: 900; color: var(--text-light); text-decoration: none; }
+        .nav-links { display: flex; gap: 1.5rem; }
+        .nav-links a { color: var(--text-light); text-decoration: none; font-weight: 600; font-size: 1rem; opacity: 0.9; transition: opacity 0.3s ease; }
+        .nav-links a.active, .nav-links a:hover { opacity: 1; text-decoration: underline; }
+        .user-menu { color: var(--text-light); font-weight: 600; }
+        .user-menu a { color: var(--text-light); text-decoration: none; }
+        .user-menu a:hover { text-decoration: underline; }
+
+        /* --- Conteneur principal --- */
+        .container { max-width: 1600px; margin: 2rem auto; padding: 0 2rem; }
+        .card { background-color: var(--dark-bg-2); border-radius: var(--border-radius); box-shadow: var(--shadow); overflow: hidden; }
+        .card-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); }
+        .card-header h3 { font-family: 'Orbitron', monospace; font-size: 1.25rem; font-weight: 700; }
+        .card-content { padding: 0; }
+        
+        /* --- Tableau --- */
+        .table { width: 100%; border-collapse: collapse; }
+        .table th, .table td { padding: 1rem 1.5rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .table thead th {
+            background-color: var(--header-red);
+            color: var(--text-light);
+            font-size: 0.875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .table tbody tr:last-child td { border-bottom: none; }
+        .table tbody tr:hover { background-color: var(--dark-bg-3); }
+        .table td { color: var(--text-secondary); }
+        .table td.indicator { color: var(--text-light); font-weight: 500; }
+        .table .action-link { color: var(--primary-red); font-weight: 600; text-decoration: none; }
+        .table .action-link:hover { text-decoration: underline; }
+
+        /* Badges de Statut */
+        .badge { padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600; font-size: 0.875rem; text-transform: uppercase; }
+        .badge-completed { background-color: var(--color-success); color: var(--text-light); }
+        .badge-failed { background-color: var(--color-failed); color: var(--text-light); }
+        .badge-pending { background-color: var(--color-pending); color: var(--text-light); }
+        .badge-inprogress { background-color: #3b82f6; color: var(--text-light); } /* Bleu 'In Progress' */
+    </style>
+</head>
+<body>
+
+    <nav class="header-nav">
+        <a href="{% url 'dashboard' %}" class="logo">SOC PLATFORM</a>
+        <div class="nav-links">
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <a href="{% url 'admin_reports' %}">Reports</a>
+            <a href="{% url 'admin_mitigations_list' %}" class="active">Mitigations</a>
+            <a href="{% url 'admin_tasks_list' %}">Tasks</a>
+            <a href="{% url 'aws_config' %}">AWS Config</a>
+        </div>
+        <div class="user-menu">
+            {{ request.user.username }} (Admin) | 
+            <a href="{% url 'logout' %}">Déconnexion</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h3>Actions de Mitigation (Toutes)</h3>
+            </div>
+            <div class="card-content">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Cible</th>
+                            <th>Type d'action</th>
+                            <th>Statut</th>
+                            <th>Date</th>
+                            <th>Rapport</th>
+                            <th>Erreur</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Les données viennent de la vue 'admin_mitigations_list' -->
+                        {% for mitigation in mitigations %}
+                        <tr>
+                            <td class="indicator">{{ mitigation.target_value }}</td>
+                            <td>{{ mitigation.get_action_type_display }}</td>
+                            <td>
+                                {% if mitigation.status == 'completed' %}
+                                    <span class="badge badge-completed">Completed</span>
+                                {% elif mitigation.status == 'failed' %}
+                                    <span class="badge badge-failed">Failed</span>
+                                {% elif mitigation.status == 'in_progress' %}
+                                    <span class="badge badge-inprogress">In Progress</span>
+                                {% else %}
+                                    <span class="badge badge-pending">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ mitigation.created_at|date:"d M Y, H:i" }}</td>
+                            <td>
+                                <a href="{% url 'report_detail' mitigation.report.id %}" class="action-link">
+                                    Voir le rapport
+                                </a>
+                            </td>
+                            <td>
+                                {% if mitigation.error_message %}
+                                    <span title="{{ mitigation.error_message }}">{{ mitigation.error_message|truncatechars:30 }}</span>
+                                {% else %}
+                                    ---
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                                Aucune action de mitigation n'a encore été créée.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

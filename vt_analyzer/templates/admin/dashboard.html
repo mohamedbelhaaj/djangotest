@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - SOC Platform</title>
+    <style>
+        /* --- Importation des polices --- */
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+
+        /* --- Variables de couleur (basées sur votre design) --- */
+        :root {
+            --primary-red: #dc2626;
+            --primary-red-dark: #991b1b;
+            --header-red: #c41e3a; /* Couleur de l'en-tête de la maquette */
+            
+            --dark-bg-1: #111827; /* Fond principal (très sombre) */
+            --dark-bg-2: #1f2937; /* Fond des cartes (plus clair) */
+            --dark-bg-3: #374151; /* Survol */
+            
+            --border-color: #4b5563;
+            
+            --text-light: #f9fafb; /* Texte blanc principal */
+            --text-secondary: #9ca3af; /* Texte gris (Analyste, etc.) */
+            
+            --color-pending: #f59e0b; /* Jaune/Orange */
+            --color-critical: #ef4444; /* Rouge */
+            --color-open: #3b82f6; /* Bleu */
+            --color-blocked: #22c55e; /* Vert */
+            
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --border-radius: 0.75rem; /* 12px */
+        }
+
+        /* --- Réinitialisation et corps --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--dark-bg-1);
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        /* --- En-tête (Header) --- */
+        .header-nav {
+            background-color: var(--header-red);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid var(--primary-red-dark);
+        }
+
+        .logo {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.75rem;
+            font-weight: 900;
+            color: var(--text-light);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav-links a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            opacity: 0.9;
+            transition: opacity 0.3s ease;
+        }
+
+        .nav-links a.active,
+        .nav-links a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        .user-menu {
+            color: var(--text-light);
+            font-weight: 600;
+        }
+        .user-menu a {
+            color: var(--text-light);
+            text-decoration: none;
+        }
+        .user-menu a:hover {
+            text-decoration: underline;
+        }
+
+        /* --- Conteneur principal --- */
+        .container {
+            max-width: 1600px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        /* --- Grille des cartes de statistiques --- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background-color: var(--dark-bg-2);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            border-top: 4px solid var(--border-color);
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .stat-card h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 4rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .stat-card p {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        
+        /* Couleurs des bordures des cartes */
+        .stat-card.pending { border-color: var(--color-pending); }
+        .stat-card.pending h2 { color: var(--color-pending); }
+        
+        .stat-card.critical { border-color: var(--color-critical); }
+        .stat-card.critical h2 { color: var(--color-critical); }
+        
+        .stat-card.open { border-color: var(--color-open); }
+        .stat-card.open h2 { color: var(--color-open); }
+        
+        .stat-card.blocked { border-color: var(--color-blocked); }
+        .stat-card.blocked h2 { color: var(--color-blocked); }
+
+        /* --- Grille principale (Rapports et Notifications) --- */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background-color: var(--dark-bg-2);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden; /* Pour les en-têtes de tableau */
+        }
+
+        .card-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        
+        .btn-link {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .btn-link:hover {
+            color: var(--text-light);
+            text-decoration: underline;
+        }
+
+        .card-content {
+            padding: 0; /* Pas de padding pour que le tableau prenne toute la largeur */
+        }
+        
+        /* --- Tableau des rapports --- */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .table th,
+        .table td {
+            padding: 1rem 1.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .table thead th {
+            background-color: var(--header-red);
+            color: var(--text-light);
+            font-size: 0.875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        
+        .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .table tbody tr:hover {
+            background-color: var(--dark-bg-3);
+        }
+        
+        .table td {
+            color: var(--text-secondary);
+        }
+        .table td.indicator {
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        .table .action-link {
+            color: var(--primary-red);
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .table .action-link:hover {
+            text-decoration: underline;
+        }
+        
+        /* Badges de sévérité */
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 99px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+        }
+        .badge-critical { background-color: var(--color-critical); color: var(--text-light); }
+        .badge-high { background-color: var(--color-pending); color: var(--text-light); }
+        .badge-medium { background-color: var(--color-open); color: var(--text-light); }
+        .badge-low { background-color: var(--color-blocked); color: var(--text-light); }
+        .badge-info { background-color: var(--border-color); color: var(--text-light); }
+
+        /* --- Section des notifications --- */
+        .notification-list {
+            padding: 0.5rem 0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .notification-item {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+        
+        .notification-item p.title {
+            color: var(--text-light);
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        .notification-item p.message {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        /* --- Responsive --- */
+        @media (max-width: 1200px) {
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header-nav {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <nav class="header-nav">
+        <a href="{% url 'dashboard' %}" class="logo">SOC PLATFORM</a>
+        <div class="nav-links">
+            <a href="{% url 'dashboard' %}" class="active">Dashboard</a>
+            <a href="{% url 'admin_reports' %}">Reports</a>
+            <a href="{% url 'admin_mitigations_list' %}">Migrations</a>            <!-- LIENS CORRIGÉS -->
+            <a href="{% url 'admin_tasks_list' %}">Tasks</a>
+            <a href="{% url 'aws_config' %}">AWS Config</a>
+        </div>
+        <div class="user-menu">
+            {{ request.user.username }} (Admin) | 
+            <a href="{% url 'logout' %}">Déconnexion</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        
+        <!-- Cartes de statistiques (connectées à votre vue) -->
+        <div class="stats-grid">
+            <div class="stat-card pending">
+                <!-- Données de votre vue 'admin_dashboard' -->
+                <h2>{{ pending_reports }}</h2>
+                <p>Pending Reports</p>
+            </div>
+            <div class="stat-card critical">
+                <h2>{{ critical_reports }}</h2>
+                <p>Critical Threats</p>
+            </div>
+            <div class="stat-card open">
+                <h2>{{ open_tasks }}</h2>
+                <p>Open Tasks</p>
+            </div>
+            <div class="stat-card blocked">
+                <h2>0</h2> <!-- Ce sera dynamique plus tard -->
+                <p>Blocked IPs</p>
+            </div>
+        </div>
+
+        <!-- Grille principale -->
+        <div class="main-grid">
+            
+            <!-- Colonne des rapports récents (connectée) -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Recent Threat Reports</h3>
+                    <a href="{% url 'admin_reports' %}" class="btn-link">View All</a>
+                </div>
+                <div class="card-content">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Indicator</th>
+                                <th>Severity</th>
+                                <th>Analyst</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Données de votre vue 'admin_dashboard' -->
+                            {% for report in reports %}
+                            <tr>
+                                <td>{{ report.get_input_type_display }}</td>
+                                <td class="indicator">{{ report.input_value|truncatechars:40 }}</td>
+                                <td>
+                                    {% if report.severity == 'critical' %}
+                                        <span class="badge badge-critical">Critical</span>
+                                    {% elif report.severity == 'high' %}
+                                        <span class="badge badge-high">High</span>
+                                    {% elif report.severity == 'medium' %}
+                                        <span class="badge badge-medium">Medium</span>
+                                    {% elif report.severity == 'low' %}
+                                        <span class="badge badge-low">Low</span>
+                                    {% else %}
+                                        <span class="badge badge-info">{{ report.get_severity_display|default:'Info' }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ report.analyst.username }}</td>
+                                <td>
+                                    <a href="{% url 'report_detail' report.id %}" class="action-link">View Details</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                                    No reports assigned to you.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Colonne des notifications (connectée) -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Notifications</h3>
+                    <a href="#" class="btn-link">Mark All Read</a>
+                </div>
+                <div class="notification-list">
+                    <!-- Données de votre vue 'admin_dashboard' -->
+                    {% for notif in notifications %}
+                    <div class="notification-item">
+                        <p classF="title">{{ notif.title }}</p>
+                        <p class="message">{{ notif.message }}</p>
+                    </div>
+                    {% empty %}
+                    <div style="padding: 1.5rem; text-align: center; color: var(--text-secondary);">
+                        No new notifications.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div> <!-- fin .main-grid -->
+    </div> <!-- fin .container -->
+
+</body>
+</html>
