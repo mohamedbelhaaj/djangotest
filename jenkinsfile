@@ -1,46 +1,31 @@
 pipeline {
-    agent any
-
+    agent {
+        docker {
+            image 'python:3.9-slim'
+            // PAS d'option: args '-u root:root'
+        }
+    }
     environment {
         VENV = "${WORKSPACE}/venv"
         PATH = "${WORKSPACE}/venv/bin:${env.PATH}"
         SONAR_TOKEN = credentials('SONAR_TOKEN')
     }
-
     stages {
-
         stage('Checkout') {
             steps {
                 git url: 'https://github.com/mohamedbelhaaj/djangotest.git', branch: 'main'
             }
         }
-
-        stage('Install Python') {
-            steps {
-                sh '''
-                    if ! command -v python3 >/dev/null 2>&1; then
-                        echo ">>> Python3 absent. Installation..."
-                        apt-get update
-                        apt-get install -y python3 python3-venv python3-pip
-                    fi
-
-                    python3 --version
-                '''
-            }
-        }
-
         stage('Create Virtualenv + Install Dependencies') {
             steps {
                 sh '''
                     python3 -m venv $VENV
                     . $VENV/bin/activate
-
                     pip install --upgrade pip
                     pip install -r requirements.txt
                 '''
             }
         }
-
         stage('Lint') {
             steps {
                 sh '''
@@ -50,7 +35,6 @@ pipeline {
                 '''
             }
         }
-
         stage('Run Tests') {
             steps {
                 sh '''
@@ -59,7 +43,6 @@ pipeline {
                 '''
             }
         }
-
         stage('SonarQube Analysis') {
             environment {
                 SONAR_HOST_URL = 'http://sonarqube:9000'
@@ -68,6 +51,7 @@ pipeline {
                 withSonarQubeEnv('SonarQube') {
                     sh '''
                         . $VENV/bin/activate
+                        pip install sonar-scanner
                         sonar-scanner \
                         -Dsonar.projectKey=django_project \
                         -Dsonar.sources=. \
@@ -78,7 +62,6 @@ pipeline {
             }
         }
     }
-
     post {
         always {
             cleanWs()
