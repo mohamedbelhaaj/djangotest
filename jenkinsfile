@@ -1,31 +1,37 @@
 pipeline {
     agent {
         docker {
-            image 'python:3.9-slim'
-            // PAS d'option: args '-u root:root'
+            image 'python:3.10'
+            args '-u root:root'   // facultatif si besoin d’install système
         }
     }
+
     environment {
         VENV = "${WORKSPACE}/venv"
         PATH = "${WORKSPACE}/venv/bin:${env.PATH}"
         SONAR_TOKEN = credentials('SONAR_TOKEN')
     }
+
     stages {
+
         stage('Checkout') {
             steps {
                 git url: 'https://github.com/mohamedbelhaaj/djangotest.git', branch: 'main'
             }
         }
+
         stage('Create Virtualenv + Install Dependencies') {
             steps {
                 sh '''
                     python3 -m venv $VENV
                     . $VENV/bin/activate
+
                     pip install --upgrade pip
                     pip install -r requirements.txt
                 '''
             }
         }
+
         stage('Lint') {
             steps {
                 sh '''
@@ -35,6 +41,7 @@ pipeline {
                 '''
             }
         }
+
         stage('Run Tests') {
             steps {
                 sh '''
@@ -43,6 +50,7 @@ pipeline {
                 '''
             }
         }
+
         stage('SonarQube Analysis') {
             environment {
                 SONAR_HOST_URL = 'http://sonarqube:9000'
@@ -51,17 +59,17 @@ pipeline {
                 withSonarQubeEnv('SonarQube') {
                     sh '''
                         . $VENV/bin/activate
-                        pip install sonar-scanner
                         sonar-scanner \
-                        -Dsonar.projectKey=django_project \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=$SONAR_HOST_URL \
-                        -Dsonar.login=$SONAR_TOKEN
+                            -Dsonar.projectKey=django_project \
+                            -Dsonar.sources=. \
+                            -Dsonar.host.url=$SONAR_HOST_URL \
+                            -Dsonar.login=$SONAR_TOKEN
                     '''
                 }
             }
         }
     }
+
     post {
         always {
             cleanWs()
