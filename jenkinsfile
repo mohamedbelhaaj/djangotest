@@ -1,18 +1,9 @@
 pipeline {
-
-    agent {
-        docker {
-            // Image officielle Python qui fonctionne sur Windows/Docker Desktop
-            image 'python:3.12'
-            args '-u root:root'
-        }
-    }
+    agent any
 
     environment {
         VENV = "${WORKSPACE}/venv"
         PATH = "${WORKSPACE}/venv/bin:${env.PATH}"
-
-        // Ton token SonarQube stocké dans Jenkins Credentials
         SONAR_TOKEN = credentials('SONAR_TOKEN')
     }
 
@@ -24,11 +15,26 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Install Python') {
+            steps {
+                sh '''
+                    if ! command -v python3 >/dev/null 2>&1; then
+                        echo ">>> Python3 absent. Installation..."
+                        apt-get update
+                        apt-get install -y python3 python3-venv python3-pip
+                    fi
+
+                    python3 --version
+                '''
+            }
+        }
+
+        stage('Create Virtualenv + Install Dependencies') {
             steps {
                 sh '''
                     python3 -m venv $VENV
                     . $VENV/bin/activate
+
                     pip install --upgrade pip
                     pip install -r requirements.txt
                 '''
@@ -40,7 +46,7 @@ pipeline {
                 sh '''
                     . $VENV/bin/activate
                     pip install flake8
-                    flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127
+                    flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 || true
                 '''
             }
         }
@@ -61,6 +67,7 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     sh '''
+                        . $VENV/bin/activate
                         sonar-scanner \
                         -Dsonar.projectKey=django_project \
                         -Dsonar.sources=. \
