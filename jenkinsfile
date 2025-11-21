@@ -4,7 +4,8 @@ pipeline {
     environment {
         VENV = "${WORKSPACE}/venv"
         SONAR_TOKEN = credentials('SONAR_TOKEN')
-        SONAR_HOST_URL = 'http://sonarqube:9000'
+        // Remplace par ton IP locale (ipconfig)
+        SONAR_HOST_URL = 'http://host.docker.internal:9000'
     }
 
     stages {
@@ -49,7 +50,7 @@ pipeline {
             steps {
                 sh '''
                     echo "=== Testing SonarQube connection ==="
-                    curl -s $SONAR_HOST_URL/api/system/status || echo "Cannot connect to SonarQube"
+                    curl -s $SONAR_HOST_URL/api/system/status || echo "Cannot connect"
                     
                     echo "=== Running SonarScanner ==="
                     sonar-scanner \
@@ -57,8 +58,7 @@ pipeline {
                         -Dsonar.sources=. \
                         -Dsonar.exclusions=venv/**,*.pyc,__pycache__/**,migrations/** \
                         -Dsonar.host.url=$SONAR_HOST_URL \
-                        -Dsonar.token=$SONAR_TOKEN \
-                        -X
+                        -Dsonar.token=$SONAR_TOKEN
                 '''
             }
         }
