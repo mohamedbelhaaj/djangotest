@@ -1,14 +1,8 @@
 pipeline {
-    agent {
-        docker {
-            image 'python:3.10'
-            args '-u root:root'   // facultatif si besoin d’install système
-        }
-    }
+    agent any
 
     environment {
         VENV = "${WORKSPACE}/venv"
-        PATH = "${WORKSPACE}/venv/bin:${env.PATH}"
         SONAR_TOKEN = credentials('SONAR_TOKEN')
     }
 
@@ -20,12 +14,19 @@ pipeline {
             }
         }
 
+        stage('Setup Python') {
+            steps {
+                sh '''
+                    python3 --version || { echo "Python3 not found"; exit 1; }
+                '''
+            }
+        }
+
         stage('Create Virtualenv + Install Dependencies') {
             steps {
                 sh '''
                     python3 -m venv $VENV
                     . $VENV/bin/activate
-
                     pip install --upgrade pip
                     pip install -r requirements.txt
                 '''
