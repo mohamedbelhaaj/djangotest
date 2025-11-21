@@ -48,12 +48,17 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 sh '''
+                    echo "=== Testing SonarQube connection ==="
+                    curl -s $SONAR_HOST_URL/api/system/status || echo "Cannot connect to SonarQube"
+                    
+                    echo "=== Running SonarScanner ==="
                     sonar-scanner \
                         -Dsonar.projectKey=django_project \
                         -Dsonar.sources=. \
-                        -Dsonar.exclusions=venv/**,*.pyc,__pycache__/** \
+                        -Dsonar.exclusions=venv/**,*.pyc,__pycache__/**,migrations/** \
                         -Dsonar.host.url=$SONAR_HOST_URL \
-                        -Dsonar.login=$SONAR_TOKEN
+                        -Dsonar.token=$SONAR_TOKEN \
+                        -X
                 '''
             }
         }
