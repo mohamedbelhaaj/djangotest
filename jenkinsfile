@@ -14,14 +14,6 @@ pipeline {
             }
         }
 
-        stage('Setup Python') {
-            steps {
-                sh '''
-                    python3 --version || { echo "Python3 not found"; exit 1; }
-                '''
-            }
-        }
-
         stage('Create Virtualenv + Install Dependencies') {
             steps {
                 sh '''
