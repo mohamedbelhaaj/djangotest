@@ -7,6 +7,7 @@ pipeline {
         SONAR_HOST_URL = 'http://host.docker.internal:9000'
         DOCKER_IMAGE = 'virus-analyzer'
         DOCKER_TAG = "${BUILD_NUMBER}"
+        DOCKER_HOST = 'tcp://host.docker.internal:2375'
     }
 
     stages {
