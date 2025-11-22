@@ -2,77 +2,112 @@ pipeline {
     agent any
 
     environment {
-        VENV = "${WORKSPACE}/venv"
-        SONAR_TOKEN = credentials('SONAR_TOKEN')
-        SONAR_HOST_URL = 'http://host.docker.internal:9000'
+        // Nom de l'image Docker
+        DOCKER_IMAGE = 'virus-analyzer'
+        DOCKER_TAG = "${BUILD_NUMBER}"
+        // Registry Docker (optionnel - décommentez si vous utilisez un registry)
+        // DOCKER_REGISTRY = 'your-registry.com'
+        // DOCKER_CREDENTIALS = 'docker-credentials-id'
     }
 
     stages {
-
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/mohamedbelhaaj/djangotest.git', branch: 'main'
+                checkout scm
             }
         }
 
-        stage('Create Virtualenv + Install Dependencies') {
+        stage('Install Dependencies') {
             steps {
-                sh '''
-                    python3 -m venv $VENV
-                    . $VENV/bin/activate
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
-                '''
+                dir('backend') {
+                    sh 'pip install -r requirements.txt'
+                }
             }
         }
 
-        stage('Lint') {
+        stage('Run Tests + Coverage') {
             steps {
-                sh '''
-                    . $VENV/bin/activate
-                    pip install flake8
-                    flake8 . --exclude=venv --count --exit-zero --max-complexity=10 --max-line-length=127 || true
-                '''
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                sh '''
-                    . $VENV/bin/activate
-                    echo "===== Running Django tests ====="
-                    python manage.py test --noinput
-                '''
+                dir('backend') {
+                    sh 'coverage run manage.py test'
+                    sh 'coverage xml'
+                }
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                sh '''
-                    echo "===== Testing SonarQube connection ====="
-                    curl -s $SONAR_HOST_URL/api/system/status || echo "Cannot connect"
-
-                    echo "===== Running SonarScanner ====="
-                    sonar-scanner \
-                        -Dsonar.host.url=$SONAR_HOST_URL \
-                        -Dsonar.login=$SONAR_TOKEN
-                '''
+                dir('backend') {
+                    script {
+                        def scannerHome = tool 'SonarScanner'
+                        withSonarQubeEnv('SonarQube') {
+                            sh "${scannerHome}/bin/sonar-scanner"
+                        }
+                    }
+                }
             }
         }
 
         stage('Quality Gate') {
-            when {
-                expression { return currentBuild.currentResult == 'SUCCESS' }
-            }
             steps {
-                echo "Quality Gate stage skipped for simplicity."
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                dir('backend') {
+                    script {
+                        // Construction de l'image Docker
+                        docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
+                        // Tag aussi avec 'latest'
+                        sh "docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest"
+                    }
+                }
+            }
+        }
+
+        / Optionnel: Push vers un registry Docker
+        // stage('Push to Registry') {
+        //     steps {
+        //         script {
+        //             docker.withRegistry("https://${DOCKER_REGISTRY}", DOCKER_CREDENTIALS) {
+        //                 docker.image("${DOCKER_IMAGE}:${DOCKER_TAG}").push()
+        //                 docker.image("${DOCKER_IMAGE}:latest").push()
+        //             }
+        //         }
+        //     }
+        // }
+
+        stage('Cleanup') {
+            steps {
+                // Nettoyage des images anciennes (optionnel)
+                sh '''
+                    docker image prune -f
+                '''
             }
         }
     }
 
     post {
         always {
-            cleanWs()
+            // Archiver les rapports de couverture
+            junit allowEmptyResults: true, testResults: '**/test-results.xml'
+            publishHTML(target: [
+                allowMissing: true,
+                alwaysLinkToLastBuild: false,
+                keepAll: true,
+                reportDir: 'backend',
+                reportFiles: 'coverage.xml',
+                reportName: 'Coverage Report'
+            ])
+        }
+        success {
+            echo "✅ Pipeline terminé avec succès! Image: ${DOCKER_IMAGE}:${DOCKER_TAG}"
+        }
+        failure {
+            echo "❌ Pipeline échoué"
         }
     }
 }
