@@ -52,19 +52,26 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            steps {
+    steps {
+        script {
+            withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
                 sh '''
                     echo "===== Testing SonarQube connection ====="
-                    curl -s $SONAR_HOST_URL/api/system/status || echo "Cannot connect"
-
+                    curl -s http://host.docker.internal:9000/api/system/status
+                    
                     echo "===== Running SonarScanner ====="
                     sonar-scanner \
-                        -Dsonar.host.url=$SONAR_HOST_URL \
-                        -Dsonar.login=$SONAR_TOKEN
+                        -Dsonar.projectKey=djangotest \
+                        -Dsonar.sources=. \
+                        -Dsonar.host.url=http://host.docker.internal:9000 \
+                        -Dsonar.token="${SONAR_TOKEN}" \
+                        -Dsonar.exclusions=**/venv/**,**/migrations/**,**/tests.py \
+                        -Dsonar.python.version=3.13
                 '''
             }
         }
-
+    }
+}
         stage('Quality Gate') {
             when {
                 expression { return currentBuild.currentResult == 'SUCCESS' }
