@@ -54,7 +54,7 @@ pipeline {
         stage('SonarQube Analysis') {
     steps {
         script {
-            withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
+            withCredentials([string(credentialsId: 'SONAR-TOKEN', variable: 'SONAR-TOKEN')]) {
                 sh '''
                     echo "===== Testing SonarQube connection ====="
                     curl -s http://host.docker.internal:9000/api/system/status
@@ -64,7 +64,7 @@ pipeline {
                         -Dsonar.projectKey=djangotest \
                         -Dsonar.sources=. \
                         -Dsonar.host.url=http://host.docker.internal:9000 \
-                        -Dsonar.token="${SONAR_TOKEN}" \
+                        -Dsonar.token="${SONAR-TOKEN}" \
                         -Dsonar.exclusions=**/venv/**,**/migrations/**,**/tests.py \
                         -Dsonar.python.version=3.13
                 '''
