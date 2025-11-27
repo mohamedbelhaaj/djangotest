@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         VENV = "${WORKSPACE}/venv"
-        SONAR_TOKEN = credentials('SONAR_TOKEN')
+        SONAR_TOKEN = credentials('SONAR-TOKEN')
         SONAR_HOST_URL = 'http://host.docker.internal:9000'
         DOCKER_IMAGE = 'mohamedbelhaj/djangoproject'
         DOCKER_TAG = "${BUILD_NUMBER}"
