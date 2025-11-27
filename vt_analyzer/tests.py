@@ -3,16 +3,15 @@ from django.contrib.auth.models import User
 from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 class BasicModelTest(TestCase):
-    """Tests basiques pour vérifier que les tests fonctionnent"""
-    
     def setUp(self):
-        """Préparation des données de test"""
         self.user = User.objects.create_user(
             username='testuser',
-            email='test@example.com',
-            password='testpass123'
+            password='testpass123',
+            email='test@example.com'
         )
         
     def test_user_creation(self):
