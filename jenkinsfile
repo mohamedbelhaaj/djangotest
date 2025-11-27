@@ -39,14 +39,7 @@ pipeline {
                 '''
             }
         }
-          stage('Prepare') {
-    steps {
-        sh '''
-            python manage.py makemigrations
-            python manage.py migrate
-        '''
-    }
-}
+     
 
         stage('Run Tests') {
             steps {
