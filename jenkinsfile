@@ -3,16 +3,13 @@ pipeline {
 
     environment {
         VENV = "${WORKSPACE}/venv"
-        SONAR_TOKEN = credentials('SONAR-TOKEN')
         SONAR_HOST_URL = 'http://host.docker.internal:9000'
         DOCKER_IMAGE = 'mohamedbelhaj/djangoproject'
         DOCKER_TAG = "${BUILD_NUMBER}"
         DOCKER_HOST = 'tcp://host.docker.internal:2375'
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 git url: 'https://github.com/mohamedbelhaaj/djangotest.git', branch: 'main'
@@ -35,11 +32,10 @@ pipeline {
                 sh '''
                     . $VENV/bin/activate
                     pip install flake8
-                    flake8 . --exclude=venv --count --exit-zero --max-complexity=10 --max-line-length=127 || true
+                    flake8 . --exclude=venv --count --exit-zero --max-complexity=10 --max-line-length=127
                 '''
             }
         }
-     
 
         stage('Run Tests') {
             steps {
@@ -52,68 +48,108 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-    steps {
-        script {
-            withCredentials([string(credentialsId: 'SONAR-TOKEN', variable: 'SONAR-TOKEN')]) {
-                sh '''
-                    echo "===== Testing SonarQube connection ====="
-                    curl -s http://host.docker.internal:9000/api/system/status
-                    
-                    echo "===== Running SonarScanner ====="
-                    sonar-scanner \
-                        -Dsonar.projectKey=djangotest \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=http://host.docker.internal:9000 \
-                        -Dsonar.token="${SONAR-TOKEN}" \
-                        -Dsonar.exclusions=**/venv/**,**/migrations/**,**/tests.py \
-                        -Dsonar.python.version=3.13
-                '''
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'SONAR-TOKEN', variable: 'SONAR_TOKEN')]) {
+                        sh '''
+                            echo "===== Testing SonarQube connection ====="
+                            curl -s http://host.docker.internal:9000/api/system/status
+                            
+                            echo "===== Running SonarScanner ====="
+                            sonar-scanner \
+                                -Dsonar.projectKey=djangotest \
+                                -Dsonar.sources=. \
+                                -Dsonar.host.url=http://host.docker.internal:9000 \
+                                -Dsonar.token=${SONAR_TOKEN} \
+                                -Dsonar.exclusions=**/venv/**,**/migrations/**,**/tests.py \
+                                -Dsonar.python.version=3.13
+                        '''
+                    }
+                }
             }
         }
-    }
-}
+
         stage('Quality Gate') {
             when {
                 expression { return currentBuild.currentResult == 'SUCCESS' }
             }
             steps {
-                echo "Quality Gate stage skipped for simplicity."
+                timeout(time: 5, unit: 'MINUTES') {
+                    script {
+                        withCredentials([string(credentialsId: 'SONAR-TOKEN', variable: 'SONAR_TOKEN')]) {
+                            sh '''
+                                echo "===== Checking Quality Gate ====="
+                                # Wait for analysis to complete
+                                sleep 10
+                                
+                                # Check quality gate status
+                                QUALITY_GATE=$(curl -s -u ${SONAR_TOKEN}: \
+                                    "http://host.docker.internal:9000/api/qualitygates/project_status?projectKey=djangotest" \
+                                    | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+                                
+                                echo "Quality Gate Status: $QUALITY_GATE"
+                                
+                                if [ "$QUALITY_GATE" != "OK" ]; then
+                                    echo "Quality Gate Failed!"
+                                    exit 1
+                                fi
+                            '''
+                        }
+                    }
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh '''
-                    echo "===== Building Docker Image ====="
-                    docker build -t $DOCKER_IMAGE:$DOCKER_TAG .
-                    docker tag $DOCKER_IMAGE:$DOCKER_TAG $DOCKER_IMAGE:latest
-                    echo "===== Image created: $DOCKER_IMAGE:$DOCKER_TAG ====="
-                    docker images | grep djangoproject
-                '''
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', 
+                                                     usernameVariable: 'DOCKER_USER', 
+                                                     passwordVariable: 'DOCKER_PASS')]) {
+                        sh '''
+                            echo "===== Building Docker Image ====="
+                            docker build -t $DOCKER_IMAGE:$DOCKER_TAG .
+                            docker tag $DOCKER_IMAGE:$DOCKER_TAG $DOCKER_IMAGE:latest
+                            echo "===== Image created: $DOCKER_IMAGE:$DOCKER_TAG ====="
+                            docker images | grep djangoproject
+                        '''
+                    }
+                }
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
-                sh '''
-                    echo "===== Logging in to Docker Hub ====="
-                    echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin
-                    
-                    echo "===== Pushing Docker Image ====="
-                    docker push $DOCKER_IMAGE:$DOCKER_TAG
-                    docker push $DOCKER_IMAGE:latest
-                    
-                    echo "===== Push completed successfully ====="
-                '''
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', 
+                                                     usernameVariable: 'DOCKER_USER', 
+                                                     passwordVariable: 'DOCKER_PASS')]) {
+                        sh '''
+                            echo "===== Logging in to Docker Hub ====="
+                            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                            
+                            echo "===== Pushing Docker Image ====="
+                            docker push $DOCKER_IMAGE:$DOCKER_TAG
+                            docker push $DOCKER_IMAGE:latest
+                            
+                            echo "===== Push completed successfully ====="
+                        '''
+                    }
+                }
             }
         }
-
     }
 
     post {
         always {
-            sh 'docker logout'
+            sh 'docker logout || true'
             cleanWs()
+        }
+        success {
+            echo '===== Pipeline completed successfully! ====='
+        }
+        failure {
+            echo '===== Pipeline failed! Check the logs above. ====='
         }
     }
 }
